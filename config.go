@@ -64,6 +64,9 @@ func LoadConfig(filename string) (*Config, error) {
 		return nil, err
 	}
 
+	config := &Config{}
+	metaClient := ec2metadata.New(awsSession.New(&aws.Config{}))
+
 	var fConfig fileConfig
 	err = hcl.Decode(&fConfig, string(configBytes))
 	if err != nil {
@@ -71,15 +74,25 @@ func LoadConfig(filename string) (*Config, error) {
 	}
 
 	if fConfig.LogGroupName == "" {
-		return nil, fmt.Errorf("log_group is required")
+		config.LogGroupName, err = metaClient.GetMetadata("security-groups")
+
+		if (err!=nil) {
+			config.LogGroupName = "log_group"
+			fmt.Printf("Log group name was not set and can't get from AWS EC2 Meta, using default %s \n",
+				config.LogGroupName)
+		} else {
+			fmt.Printf("Log group name set to security group name %s \n",
+				config.LogGroupName)
+
+		}
+	} else {
+		config.LogGroupName = fConfig.LogGroupName
 	}
 	if fConfig.StateFilename == "" {
 		return nil, fmt.Errorf("state_file is required")
 	}
 
-	metaClient := ec2metadata.New(awsSession.New(&aws.Config{}))
 
-	config := &Config{}
 
 	if fConfig.AWSRegion != "" {
 		config.AWSRegion = fConfig.AWSRegion
@@ -111,7 +124,6 @@ func LoadConfig(filename string) (*Config, error) {
 		}
 	}
 
-	config.LogGroupName = fConfig.LogGroupName
 
 	if fConfig.LogStreamName != "" {
 		config.LogStreamName = fConfig.LogStreamName
