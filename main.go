@@ -34,7 +34,7 @@ func main() {
 }
 
 func usage() {
-	os.Stderr.WriteString("Usage: journald-cloudwatch-logs test <config-file>\n\n")
+	os.Stderr.WriteString("Usage: journald-cloudwatch-logs test2 <config-file>\n\n")
 	flag.PrintDefaults()
 	os.Stderr.WriteString("\n")
 }
