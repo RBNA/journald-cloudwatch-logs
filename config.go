@@ -222,6 +222,7 @@ func FindInstanceName(instanceId string, session *awsSession.Session) (string, e
 	resp, err := ec2Service.DescribeInstances(params)
 
 	if err != nil {
+		fmt.Println(err)
 		return name, err
 	}
 
