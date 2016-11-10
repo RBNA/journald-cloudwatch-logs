@@ -204,7 +204,7 @@ func FindInstanceName(instanceId string, session *awsSession.Session) (string, e
 
 
 
-	var name = "error"
+	var name = "NO_NAME"
 	var err error
 
 	ec2Service := ec2.New(session)
@@ -226,6 +226,9 @@ func FindInstanceName(instanceId string, session *awsSession.Session) (string, e
 	}
 
 
+	fmt.Println("Got this far")
+
+
 	if len(resp.Reservations) > 0 && len(resp.Reservations[0].Instances) > 0 {
 		var instance = resp.Reservations[0].Instances[0]
 		if len (instance.Tags) > 0 {
@@ -234,6 +237,8 @@ func FindInstanceName(instanceId string, session *awsSession.Session) (string, e
 				if *tag.Key == "Name" {
 					return *tag.Value, err
 				}
+				fmt.Println("KEY " + *tag.Key)
+
 			}
 		}
 		return name, errors.New("Could not find tag")
