@@ -140,7 +140,7 @@ func LoadConfig(filename string) (*Config, error) {
 		instanceId, err = FindInstanceId(metaClient)
 		az, err = FindAZ(metaClient)
 
-		name, err = FindInstanceName(instanceId, session)
+		name, err = FindInstanceName(instanceId, config.AWSRegion, session)
 		fmt.Printf("DONE %s \n", name+"-"+instanceId + "-" + az)
 	}
 
@@ -200,14 +200,16 @@ func FindAZ(metaClient *ec2metadata.EC2Metadata) (string, error) {
 
 
 
-func FindInstanceName(instanceId string, session *awsSession.Session) (string, error) {
+func FindInstanceName(instanceId string, region string, session *awsSession.Session) (string, error) {
 
 
 
 	var name = "NO_NAME"
 	var err error
 
-	ec2Service := ec2.New(session)
+
+
+	ec2Service := ec2.New(session, aws.NewConfig().WithRegion(region))
 
 	params := &ec2.DescribeInstancesInput{
 		InstanceIds: []*string{
