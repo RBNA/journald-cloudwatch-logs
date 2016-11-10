@@ -11,7 +11,13 @@ import (
 	awsSession "github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/hashicorp/hcl"
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"errors"
 )
+
+const DEV_DEBUG  = true
+const TEST_INSTANCE_ID = "i-01d5db425dc49f060"
+
 
 type Config struct {
 	AWSCredentials *awsCredentials.Credentials
@@ -65,7 +71,8 @@ func LoadConfig(filename string) (*Config, error) {
 	}
 
 	config := &Config{}
-	metaClient := ec2metadata.New(awsSession.New(&aws.Config{}))
+	var session = awsSession.New(&aws.Config{})
+	metaClient := ec2metadata.New(session)
 
 	var fConfig fileConfig
 	err = hcl.Decode(&fConfig, string(configBytes))
@@ -128,8 +135,13 @@ func LoadConfig(filename string) (*Config, error) {
 	if fConfig.LogStreamName != "" {
 		config.LogStreamName = fConfig.LogStreamName
 	} else {
-		// By default we use the instance id as the stream name.
-		config.LogStreamName = config.EC2InstanceId
+
+		var instanceId, az, name string
+		instanceId, err = FindInstanceId(metaClient)
+		az, err = FindAZ(metaClient)
+
+		name, err = FindInstanceName(instanceId, session)
+		fmt.Printf("DONE %s \n", name+"-"+instanceId + "-" + az)
 	}
 
 	config.StateFilename = fConfig.StateFilename
@@ -158,4 +170,75 @@ func (c *Config) NewAWSSession() *awsSession.Session {
 		MaxRetries:  aws.Int(3),
 	}
 	return awsSession.New(config)
+}
+
+
+func FindInstanceId(metaClient *ec2metadata.EC2Metadata) (string, error) {
+	instanceId, err := metaClient.GetMetadata("instance-id")
+	if err != nil {
+		if DEV_DEBUG {
+			return TEST_INSTANCE_ID, nil
+		}else {
+			return "", fmt.Errorf("unable to detect EC2 instance id: %s", err)
+		}
+	}
+	return instanceId, nil
+}
+
+func FindAZ(metaClient *ec2metadata.EC2Metadata) (string, error) {
+	az, err := metaClient.GetMetadata("placement/availability-zone")
+	if err != nil {
+		if DEV_DEBUG {
+			return "NO_AZ", nil
+		}else {
+			return "", fmt.Errorf("unable to detect EC2 az id: %s", err)
+		}
+	}
+	return az, nil
+}
+
+
+
+
+func FindInstanceName(instanceId string, session *awsSession.Session) (string, error) {
+
+
+
+	var name = "error"
+	var err error
+
+	ec2Service := ec2.New(session)
+
+	params := &ec2.DescribeInstancesInput{
+		InstanceIds: []*string{
+			aws.String(instanceId), // Required
+			// More values...
+		},
+	}
+
+
+
+	fmt.Println("Running describe")
+	resp, err := ec2Service.DescribeInstances(params)
+
+	if err != nil {
+		return name, err
+	}
+
+
+	if len(resp.Reservations) > 0 && len(resp.Reservations[0].Instances) > 0 {
+		var instance = resp.Reservations[0].Instances[0]
+		if len (instance.Tags) > 0 {
+
+			for _, tag := range instance.Tags {
+				if *tag.Key == "Name" {
+					return *tag.Value, err
+				}
+			}
+		}
+		return name, errors.New("Could not find tag")
+
+	} else {
+		return name, errors.New("Could not find reservation")
+	}
 }
