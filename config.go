@@ -96,7 +96,7 @@ func LoadConfig(filename string) (*Config, error) {
 		config.LogGroupName = fConfig.LogGroupName
 	}
 	if fConfig.StateFilename == "" {
-		return nil, fmt.Errorf("state_file is required")
+		return nil, errors.New("state_file is required")
 	}
 
 
@@ -218,19 +218,12 @@ func FindInstanceName(instanceId string, region string, session *awsSession.Sess
 		},
 	}
 
-
-
-	fmt.Println("Running describe")
 	resp, err := ec2Service.DescribeInstances(params)
 
 	if err != nil {
 		fmt.Println(err)
 		return name, err
 	}
-
-
-	fmt.Println("Got this far")
-
 
 	if len(resp.Reservations) > 0 && len(resp.Reservations[0].Instances) > 0 {
 		var instance = resp.Reservations[0].Instances[0]
