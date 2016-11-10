@@ -139,9 +139,9 @@ func LoadConfig(filename string) (*Config, error) {
 		var instanceId, az, name string
 		instanceId, err = FindInstanceId(metaClient)
 		az, err = FindAZ(metaClient)
-
 		name, err = FindInstanceName(instanceId, config.AWSRegion, session)
-		fmt.Printf("DONE %s \n", name+"-"+instanceId + "-" + az)
+		config.LogStreamName = name+"-"+instanceId + "-" + az
+		fmt.Printf("LogStreamName was not set so using %s \n", config.LogStreamName)
 	}
 
 	config.StateFilename = fConfig.StateFilename
