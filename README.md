@@ -1,3 +1,103 @@
+# Forked from journald-cloudwatch-logs
+
+Added support to use the Instance Name Tag as the log-stream name.
+
+
+#### config.go
+```go
+
+...
+
+const DEV_DEBUG  = true
+const TEST_INSTANCE_ID = "i-01d5db425dc49f060"
+
+...
+	if fConfig.LogStreamName != "" {
+		config.LogStreamName = fConfig.LogStreamName
+	} else {
+
+		var instanceId, az, name string
+		instanceId, err = FindInstanceId(metaClient)
+		az, err = FindAZ(metaClient)
+		name, err = FindInstanceName(instanceId, config.AWSRegion, session)
+		config.LogStreamName = name+"-"+instanceId + "-" + az
+		fmt.Printf("LogStreamName was not set so using %s \n", config.LogStreamName)
+	}
+	
+	...
+
+func FindInstanceId(metaClient *ec2metadata.EC2Metadata) (string, error) {
+
+	instanceId, err := metaClient.GetMetadata("instance-id")
+
+	if err != nil {
+		if DEV_DEBUG {
+			return TEST_INSTANCE_ID, nil
+		}else {
+			return "", fmt.Errorf("unable to detect EC2 instance id: %s", err)
+		}
+	}
+	return instanceId, nil
+}
+
+func FindAZ(metaClient *ec2metadata.EC2Metadata) (string, error) {
+
+	az, err := metaClient.GetMetadata("placement/availability-zone")
+
+	if err != nil {
+		if DEV_DEBUG {
+			return "NO_AZ", nil
+		}else {
+			return "", fmt.Errorf("unable to detect EC2 az id: %s", err)
+		}
+	}
+	return az, nil
+}
+
+
+
+
+func FindInstanceName(instanceId string, region string, session *awsSession.Session) (string, error) {
+
+	var name = "NO_NAME"
+	var err error
+
+	ec2Service := ec2.New(session, aws.NewConfig().WithRegion(region))
+
+	params := &ec2.DescribeInstancesInput{
+		InstanceIds: []*string{
+			aws.String(instanceId), // Required
+			// More values...
+		},
+	}
+
+	resp, err := ec2Service.DescribeInstances(params)
+
+	if err != nil {
+		fmt.Println(err)
+		return name, err
+	}
+
+	if len(resp.Reservations) > 0 && len(resp.Reservations[0].Instances) > 0 {
+		var instance = resp.Reservations[0].Instances[0]
+		if len (instance.Tags) > 0 {
+
+			for _, tag := range instance.Tags {
+				if *tag.Key == "Name" {
+					return *tag.Value, err
+				}
+				fmt.Println("KEY " + *tag.Key)
+
+			}
+		}
+		return name, errors.New("Could not find tag")
+
+	} else {
+		return name, errors.New("Could not find reservation")
+	}
+}
+```
+
 # journald-cloudwatch-logs
 
 This small utility monitors the systemd journal, managed by `journald`, and writes journal entries into
