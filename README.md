@@ -98,6 +98,25 @@ func FindInstanceName(instanceId string, region string, session *awsSession.Sess
 }
 ```
 
+In order to get the above to work, you need to add an IAM policy and associated that with the IAM role you use to 
+launch the instances. 
+
+#### IAM policy file
+```js
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeInstances"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 # journald-cloudwatch-logs
 
 This small utility monitors the systemd journal, managed by `journald`, and writes journal entries into
