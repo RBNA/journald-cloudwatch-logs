@@ -2,6 +2,9 @@
 
 Added support to use the Instance Name Tag as the log-stream name.
 
+If you are unfamiliar with this or want detailed instructions on how to get this going, please read:
+["Setting up an AWS log agent to send journald & DC/OS logs to Amazon CloudWatch Log Streams"](http://www.mammatustech.com/cloud-news/settingup-aws-log-agent-journald-dcos-logs-to-amazon-cloudwatch-log-service)
+
 
 #### config.go
 ```go
