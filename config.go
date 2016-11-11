@@ -174,7 +174,9 @@ func (c *Config) NewAWSSession() *awsSession.Session {
 
 
 func FindInstanceId(metaClient *ec2metadata.EC2Metadata) (string, error) {
+
 	instanceId, err := metaClient.GetMetadata("instance-id")
+
 	if err != nil {
 		if DEV_DEBUG {
 			return TEST_INSTANCE_ID, nil
@@ -186,7 +188,9 @@ func FindInstanceId(metaClient *ec2metadata.EC2Metadata) (string, error) {
 }
 
 func FindAZ(metaClient *ec2metadata.EC2Metadata) (string, error) {
+
 	az, err := metaClient.GetMetadata("placement/availability-zone")
+
 	if err != nil {
 		if DEV_DEBUG {
 			return "NO_AZ", nil
@@ -202,12 +206,8 @@ func FindAZ(metaClient *ec2metadata.EC2Metadata) (string, error) {
 
 func FindInstanceName(instanceId string, region string, session *awsSession.Session) (string, error) {
 
-
-
 	var name = "NO_NAME"
 	var err error
-
-
 
 	ec2Service := ec2.New(session, aws.NewConfig().WithRegion(region))
 
